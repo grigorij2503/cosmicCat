@@ -1,0 +1,7 @@
+<resources>
+    <string name="point_blank_studio" translatable="false">POINT-BLANK STUDIO</string>
+    <string name="point_blank_production" translatable="false">PRODUCTION</string>
+    <string name="privacy_policy">Polityka prywatności</string>
+    <string name="privacy_policy_url" translatable="false">https://grigorij2503.github.io/cosmicCat/privacy-policy.html</string>
+    <string name="privacy_policy_open_error">Nie znaleziono przeglądarki.</string>
+</resources>

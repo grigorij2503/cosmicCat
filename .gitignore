@@ -1,0 +1,41 @@
+# Android Studio, Gradle and native build output
+.gradle/
+.kotlin/
+.idea/
+.cxx/
+.externalNativeBuild/
+build/
+*.iml
+local.properties
+
+# Android Studio signed bundle output and standalone packages
+/app/release/
+*.apk
+*.apks
+*.aab
+
+# Local signing keys and credentials
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+keystore.properties
+key.properties
+signing.properties
+secrets.properties
+credentials.json
+service-account*.json
+*-service-account.json
+play-publisher-credentials.json
+.env
+.env.*
+!.env.example
+
+# Local tooling and OS files
+.venv/
+__pycache__/
+*.py[cod]
+.DS_Store
+Thumbs.db

@@ -1,0 +1,20 @@
+<resources>
+    <style name="Theme.CosmicCat" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowBackground">#0D1432</item>
+        <item name="android:colorAccent">#FFD675</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowActionModeOverlay">true</item>
+    </style>
+
+    <style name="Theme.CosmicCat.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/point_blank_splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.CosmicCat</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+
+    <color name="point_blank_splash_background">#050505</color>
+</resources>

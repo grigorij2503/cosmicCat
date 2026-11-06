@@ -1,0 +1,2 @@
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/alien_friend_*,@drawable/cat_base,@drawable/cat_suit_overlay,@drawable/golden_meteorite,@drawable/planet_*,@drawable/rocket_base" />

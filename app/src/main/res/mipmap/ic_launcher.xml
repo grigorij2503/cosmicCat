@@ -1,0 +1,8 @@
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:shape="rectangle"
+    tools:ignore="IconXmlAndPng">
+    <size android:width="48dp" android:height="48dp" />
+    <corners android:radius="12dp" />
+    <gradient android:angle="315" android:startColor="#6456A7" android:endColor="#151E45" />
+</shape>
