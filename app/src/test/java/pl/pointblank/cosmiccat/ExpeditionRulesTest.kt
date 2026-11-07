@@ -46,9 +46,65 @@ class ExpeditionRulesTest {
         val returned = replay.landAt(Destination.MOON)
         assertEquals(2, returned.coins)
         assertEquals(pluto, returned.mission.destination)
-        val reported = done.copy(completed = missions.size, activeMission = mars).finishTrail(mars)
-        assertTrue(reported.found)
-        assertEquals(2 + REWARD, reported.landAt(Destination.MOON).coins)
+        val campaignComplete = done.copy(completed = missions.size, activeMission = mars)
+        assertEquals(campaignComplete, campaignComplete.finishTrail(mars))
+        assertEquals(2, campaignComplete.landAt(Destination.MOON).coins)
+    }
+
+    @Test
+    fun lastCampaignRewardUnlocksContractsAndLeavesRoutesOpenForExploration() {
+        val last = missions.last().destination
+        val before = Progress(started = true, completed = missions.size - 1, activeMission = last,
+            location = last, found = true)
+        assertEquals(before, before.drawContract())
+
+        val paid = before.landAt(Destination.MOON)
+        assertTrue(paid.campaignComplete)
+        assertNull(paid.assignmentDestination)
+        assertEquals(REWARD, paid.coins)
+        assertEquals(ScreenState.Reward, paid.checkpoint())
+        assertEquals(paid, paid.drawContract())
+        assertEquals(paid, paid.landAt(Destination.MOON))
+        val visit = paid.copy(rewardPending = false).landAt(last)
+        assertEquals(TrailStage.COMPLETE, visit.stageAt(last))
+        assertEquals(TrailStage.FIRST_SUPPLY, visit.replayTrail(last).stageAt(last))
+    }
+
+    @Test
+    fun contractsAreDrawnOnceAndPayOnlyOnReturnWithoutResettingTrails() {
+        val solutions = mapOf(
+            Contract.VENUS_BEACONS to listOf(0), Contract.MARS_POWER to listOf(1, 2),
+            Contract.MARS_MARKERS to listOf(2), Contract.PLUTO_GARDEN to listOf(1),
+            Contract.PLUTO_LOCK to listOf(ShapeToken.DIAMOND.ordinal),
+            Contract.JUPITER_CARGO to listOf(Move.LEFT, Move.UP, Move.LEFT, Move.UP, Move.LEFT).map(Move::ordinal),
+            Contract.NEPTUNE_GUST to listOf(0), Contract.SATURN_SAMPLES to listOf(ShapeToken.TRIANGLE.ordinal),
+        )
+        val oldTrails = mapOf(Destination.VENUS to TrailStage.SECOND_SUPPLY)
+        var save = Progress(started = true, completed = missions.size, trailStages = oldTrails)
+        val random = kotlin.random.Random(42)
+        repeat(Contract.entries.size) { index ->
+            val drawn = save.drawContract(random)
+            val contract = requireNotNull(drawn.activeContract)
+            assertFalse(contract in save.finishedContracts)
+            assertEquals(drawn, drawn.drawContract(random))
+            val planet = contract.destination
+            val landed = drawn.landAt(planet)
+            assertEquals(TrailStage.PUZZLE, landed.explorationStage(planet))
+            assertEquals(landed, landed.finishTrail(planet))
+            assertEquals(landed, landed.solveStation(planet, emptyList()))
+            val solved = landed.solveStation(planet, solutions.getValue(contract))
+            assertEquals(ScreenState.DiscoverySummary, solved.checkpoint())
+            assertEquals(landed.coins, solved.coins)
+            val paid = solved.landAt(Destination.MOON)
+            assertEquals((index + 1) * REWARD, paid.coins)
+            assertEquals(paid, paid.landAt(Destination.MOON))
+            assertEquals(missions.size, paid.completed)
+            assertEquals(oldTrails, paid.trailStages)
+            assertNull(paid.activeContract)
+            save = paid.copy(rewardPending = false)
+        }
+        assertEquals(Contract.entries.toSet(), save.finishedContracts)
+        assertEquals(save, save.drawContract(random))
     }
 
     @Test

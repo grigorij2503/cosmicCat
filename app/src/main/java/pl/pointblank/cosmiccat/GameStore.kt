@@ -135,7 +135,7 @@ internal fun importSprite(context: Context, uri: Uri): String {
 }
 
 internal object GameSaveJson {
-    private const val SCHEMA_VERSION = 2
+    private const val SCHEMA_VERSION = 3
     private val legacyMissionOrder = listOf(
         Destination.MARS, Destination.PLUTO, Destination.VENUS,
         Destination.JUPITER, Destination.NEPTUNE, Destination.SATURN,
@@ -189,6 +189,8 @@ internal object GameSaveJson {
             plants = json.readDestinationMap<PlantStage>("plants"),
             requests = json.readSet<Alien>("requests"),
             activeMission = activeMission,
+            activeContract = Contract.entries.firstOrNull { it.name == json.optString("activeContract") },
+            finishedContracts = json.readSet<Contract>("finishedContracts"),
         )
     }
 
@@ -196,6 +198,8 @@ internal object GameSaveJson {
         val json = JSONObject().apply {
             put("schemaVersion", SCHEMA_VERSION)
             put("activeMission", progress.activeMission.name)
+            put("activeContract", progress.activeContract?.name)
+            put("finishedContracts", JSONArray(progress.finishedContracts.map { it.name }))
             put("started", progress.started)
             put("location", progress.location.name)
             put("completed", progress.completed)

@@ -47,7 +47,7 @@ internal enum class ExpeditionDialog { PUZZLE, SECRET, TOWER, FRIEND }
 
 internal class ExplorationSession(state: Progress) {
     private val trail = trails.getValue(state.location)
-    private val stage = state.stageAt(state.location)
+    private val stage = state.explorationStage(state.location)
     val world = PlatformWorld(
         state.vehicle, trail, state.portLevel(Building.HANGAR), stage,
         startAtGoal = state.found && stage == TrailStage.COMPLETE && state.activeMission == state.location,
@@ -68,7 +68,8 @@ internal fun PlanetPlatformerScreen(
 ) {
     val destination = state.location
     val trail = trails.getValue(destination)
-    val stage = state.stageAt(destination)
+    val contract = state.contractAt(destination)
+    val stage = state.explorationStage(destination)
     val supply = when (stage) {
         TrailStage.FIRST_SUPPLY -> trail.first
         TrailStage.SECOND_SUPPLY -> trail.second
@@ -76,7 +77,7 @@ internal fun PlanetPlatformerScreen(
     }
     val discovery = trail.mission.discovery
     val automaticPickup = discovery == Discovery.METEOR || discovery == Discovery.ICE || discovery == Discovery.RING
-    val reportAtLanding = stage == TrailStage.COMPLETE && !state.found && state.mission.destination == destination
+    val reportAtLanding = stage == TrailStage.COMPLETE && !state.found && state.assignmentDestination == destination
     val secretCollected = destination in state.stickers
     val seedCollected = destination in state.seeds
     val alien = Alien.on(destination)
@@ -131,7 +132,7 @@ internal fun PlanetPlatformerScreen(
                                 stage == TrailStage.GOAL && world.touches(trail.goalX, 59f) -> Nearby.GOAL
                                 !seedCollected && world.touches(trail.seedX, 51f) -> Nearby.SEED
                                 !secretCollected && world.atSecret() -> Nearby.SECRET
-                                stage == TrailStage.COMPLETE && world.touches(108f, 72f) -> Nearby.REPLAY
+                                stage == TrailStage.COMPLETE && contract == null && world.touches(108f, 72f) -> Nearby.REPLAY
                                 else -> Nearby.NONE
                             }
                         }
@@ -163,7 +164,11 @@ internal fun PlanetPlatformerScreen(
                 SmallAction(if (driving) "WYSIĄDŹ" else "ŁAZIK", session::toggleRover,
                     Modifier.widthIn(min = 67.dp), selected = driving, enabled = !game.busy, size = 12)
             }
-            val objective = if (reportAtLanding) "Zgłoś wcześniejsze odkrycie przy lądowisku." else trail.objective(stage)
+            val objective = when {
+                reportAtLanding -> "Zgłoś wcześniejsze odkrycie przy lądowisku."
+                contract != null && !state.found -> "Zlecenie: ${contract.title}. Podejdź do stanowiska."
+                else -> trail.objective(stage)
+            }
             Text(direction + objective, color = if (stage == TrailStage.COMPLETE) Mint else Gold,
                 fontWeight = FontWeight.Bold, fontSize = 13.sp, lineHeight = 16.sp)
             val frame = RoundedCornerShape(17.dp)
@@ -257,7 +262,7 @@ internal fun PlanetPlatformerScreen(
     }
     val close = { dialog = null }
     when (dialog) {
-        ExpeditionDialog.PUZZLE -> ChallengeDialog(trail.challenge, alien, assets, state.portLevel(Building.LAB), close) {
+        ExpeditionDialog.PUZZLE -> ChallengeDialog(contract?.challenge ?: trail.challenge, alien, assets, state.portLevel(Building.LAB), close) {
             game.solveStation(destination, it)
             close()
         }

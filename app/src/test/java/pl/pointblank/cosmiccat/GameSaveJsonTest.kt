@@ -63,4 +63,30 @@ class GameSaveJsonTest {
         assertEquals(Destination.JUPITER, after.activeMission)
         assertEquals(mapOf(Destination.MARS to TrailStage.COMPLETE), after.trailStages)
     }
+
+    @Test
+    fun versionTwoCampaignUnlocksContractsAndPersistsTheAssignmentAndPendingReward() {
+        val old = GameSaveJson.decode("""
+            {"schemaVersion":2,"started":true,"completed":6,"activeMission":"MARS","location":"MOON",
+            "coins":17,"cat":{"name":"Luna","gender":"GIRL"},"stickers":["MARS"],"seeds":["SATURN"],
+            "buildings":{"LAB":2},"trailStages":{"VENUS":"SECOND_SUPPLY"}}
+        """.trimIndent())
+        assertTrue(old.campaignComplete)
+        assertNull(old.assignmentDestination)
+        assertEquals("Luna", old.cat.name)
+        assertEquals(17, old.coins)
+        assertEquals(2, old.portLevel(Building.LAB))
+        assertEquals(setOf(Destination.MARS), old.stickers)
+        assertEquals(setOf(Destination.SATURN), old.seeds)
+        val drawn = old.copy(activeContract = Contract.VENUS_BEACONS, finishedContracts = setOf(Contract.MARS_POWER))
+        val landed = drawn.landAt(Destination.VENUS)
+        assertEquals(landed, GameSaveJson.decode(GameSaveJson.encode(landed)))
+        val solved = landed.solveStation(Destination.VENUS, listOf(0))
+        val reloaded = GameSaveJson.decode(GameSaveJson.encode(solved))
+        assertEquals(ScreenState.DiscoverySummary, reloaded.checkpoint())
+        val paid = reloaded.landAt(Destination.MOON)
+        assertEquals(TrailStage.SECOND_SUPPLY, paid.stageAt(Destination.VENUS))
+        assertEquals(setOf(Contract.MARS_POWER, Contract.VENUS_BEACONS), paid.finishedContracts)
+        assertEquals(paid, GameSaveJson.decode(GameSaveJson.encode(paid)))
+    }
 }

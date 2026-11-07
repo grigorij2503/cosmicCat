@@ -32,15 +32,18 @@ import kotlin.math.sin
 fun MissionBriefingScreen(state: Progress, arrival: Destination?, assets: AssetManager, game: GameViewModel) {
     GamePage("02  /  BAZA NA KSIĘŻYCU", "Port Kosmiczny", "CatX czeka na Ciebie przy lądowisku.", state.coins) {
         if (arrival == Destination.MOON) Tag(state.cat.gender.say("Doleciałeś do bazy!", "Doleciałaś do bazy!"), SkyBlue)
-        PanelCard(Modifier.fillMaxWidth(), Lavender) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically) {
-                Eyebrow("ODPRAWA  /  MISJA ${state.level}", Lavender)
-                Tag(state.mission.destination.title, colorOf(state.mission.destination.color))
+        if (state.campaignComplete) {
+            ContractBoard(state, game)
+        } else {
+            PanelCard(Modifier.fillMaxWidth(), Lavender) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Eyebrow("ODPRAWA  /  MISJA ${state.level}", Lavender)
+                    Tag(state.mission.destination.title, colorOf(state.mission.destination.color))
+                }
+                MoonComic(state, assets, state.mission.discovery.command)
+                Action("RUSZ NA MISJĘ", { game.open(ScreenState.Navigation()) }, Modifier.fillMaxWidth())
             }
-            if (state.expedition > 1) Eyebrow("WYPRAWA ${state.expedition}")
-            MoonComic(state, assets, state.mission.discovery.command)
-            Action("RUSZ NA MISJĘ", { game.open(ScreenState.Navigation()) }, Modifier.fillMaxWidth())
         }
         Eyebrow("ODKRYWAJ SWOJĄ BAZĘ")
         HubLink("Budowa Portu Kosmicznego", "Budynki, bonusy i goście w bazie", "⌂", Mint, ScreenState.Spaceport, game)
@@ -49,6 +52,59 @@ fun MissionBriefingScreen(state: Progress, arrival: Destination?, assets: AssetM
         SmallAction("ZMIEŃ KOTKA", { game.open(ScreenState.Creator(editing = true)) }, Modifier.fillMaxWidth())
         if (state.buildings.any { it.value > 0 } || state.friends.isNotEmpty()) SpaceportHubScreen(state, assets)
         PrivacyPolicyLink(Modifier.align(Alignment.CenterHorizontally))
+    }
+}
+
+@Composable
+private fun ContractBoard(state: Progress, game: GameViewModel) {
+    val contract = state.activeContract
+    val count = state.finishedContracts.size
+    val allDone = count == Contract.entries.size
+    PanelCard(Modifier.fillMaxWidth(), Gold) {
+        Eyebrow("✦  KAMPANIA UKOŃCZONA", Gold)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Canvas(Modifier.size(46.dp)) {
+                val unit = size.minDimension / 46f
+                sceneAt(0f, 0f, unit) {
+                    val ribbons = Path().apply {
+                        moveTo(10f, 27f)
+                        lineTo(8f, 44f)
+                        lineTo(16f, 40f)
+                        lineTo(22f, 44f)
+                        lineTo(23f, 34f)
+                        lineTo(24f, 44f)
+                        lineTo(30f, 40f)
+                        lineTo(38f, 44f)
+                        lineTo(36f, 27f)
+                        close()
+                    }
+                    drawPath(ribbons, Coral)
+                    val medal = Offset(23f, 20f)
+                    drawCircle(Gold, 18f, medal)
+                    drawCircle(Midnight.copy(alpha = .55f), 14.5f, medal, style = Stroke(1f))
+                    twinkle(Midnight, medal.x, medal.y, 8f)
+                }
+            }
+            Text(state.cat.gender.say("Odkrywca Układu Słonecznego", "Odkrywczyni Układu Słonecznego"),
+                color = Snow, fontWeight = FontWeight.Black, fontSize = 22.sp, lineHeight = 25.sp)
+        }
+        if (contract != null) {
+            Tag(contract.destination.title, colorOf(contract.destination.color))
+            Text(contract.title, color = Gold, fontWeight = FontWeight.Black, fontSize = 19.sp)
+            Text(contract.briefing, color = Snow, fontSize = 15.sp, lineHeight = 20.sp)
+            Action("RUSZ NA ZLECENIE", { game.open(ScreenState.Navigation()) }, Modifier.fillMaxWidth())
+        } else {
+            Text(if (allDone) "CatX dziękuje za wykonanie wszystkich zleceń. Wciąż możesz latać po sekrety."
+                else "CatX ma dla Ciebie nowe zadania. Możesz też polecieć po nasionka i naklejki.",
+                color = Mist, fontSize = 15.sp, lineHeight = 20.sp)
+            if (!allDone) Action("NOWE ZLECENIE", game::drawContract, Modifier.fillMaxWidth(), enabled = !game.busy)
+        }
+        Eyebrow("ZLECENIA CATXA  /  $count Z ${Contract.entries.size}", Mint)
+        SmallAction("SWOBODNE LOTY", { game.open(ScreenState.Navigation(freeFlight = true)) }, Modifier.fillMaxWidth())
+    }
+    PanelCard(Modifier.fillMaxWidth(), Lavender) {
+        Eyebrow("◉  WIADOMOŚĆ Z WIEŻY", Lavender)
+        Text("Z daleka dociera tajemniczy sygnał. CatX nasłuchuje…", color = Mist, fontSize = 14.sp, lineHeight = 19.sp)
     }
 }
 
@@ -118,6 +174,23 @@ private fun MoonComic(state: Progress, assets: AssetManager, dialogue: String, c
 
 @Composable
 fun DiscoverySummaryScreen(state: Progress, assets: AssetManager, game: GameViewModel) {
+    val contract = state.activeContract
+    if (contract != null) {
+        GamePage("05  /  MELDUNEK", "Zlecenie wykonane!", coins = state.coins) {
+            val tint = colorOf(contract.destination.color)
+            PreviewStage(Modifier.fillMaxWidth().height(188.dp), contract.destination.title, tint) {
+                Sprite(remember(contract) { assets.planet(contract.destination) }, Modifier.size(155.dp))
+            }
+            PanelCard(Modifier.fillMaxWidth(), Gold) {
+                Eyebrow("ZLECENIE CATXA", Gold)
+                Text(contract.title, color = Snow, fontSize = 22.sp, fontWeight = FontWeight.Black)
+                Text("Wróć do bazy na Księżycu po nagrodę.", color = Mist, fontSize = 15.sp)
+            }
+            Action("WRÓĆ DO RAKIETY", { game.open(ScreenState.Navigation(returning = true)) }, Modifier.fillMaxWidth())
+            SmallAction("POSZUKAJ JESZCZE SEKRETÓW", { game.open(ScreenState.Exploration) }, Modifier.fillMaxWidth())
+        }
+        return
+    }
     val mission = state.mission
     val color = colorOf(mission.destination.color)
     GamePage("05  /  ODKRYCIE", "Kosmiczne odkrycie!", coins = state.coins) {
@@ -148,7 +221,9 @@ fun FactCard(destination: Destination) {
 
 @Composable
 fun RewardScreen(state: Progress, assets: AssetManager, game: GameViewModel) {
-    GamePage("07  /  NAGRODA", "Brawo, załogo!", "CatX ma dla Ciebie nagrodę.", state.coins) {
+    val campaignFinale = state.campaignComplete && state.finishedContracts.isEmpty()
+    GamePage("07  /  NAGRODA", if (campaignFinale) "Kampania ukończona!" else "Brawo, załogo!",
+        "CatX ma dla Ciebie nagrodę.", state.coins) {
         PanelCard(Modifier.fillMaxWidth(), Gold) {
             MoonComic(state, assets, "BRAWO!", celebrating = true)
         }
@@ -156,7 +231,12 @@ fun RewardScreen(state: Progress, assets: AssetManager, game: GameViewModel) {
             Text("NAGRODA: $REWARD MONET", color = Gold, fontSize = 26.sp,
                 fontWeight = FontWeight.Black, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
             CoinJar(Modifier.fillMaxWidth().height(133.dp))
-            Text("Nowa misja już czeka. Monety możesz wydać w Porcie Kosmicznym.", color = Mist,
+            Text(when {
+                campaignFinale -> "CatX przyznaje Ci odznakę za odkrycie Układu Słonecznego. W porcie czekają nowe zlecenia."
+                !state.campaignComplete -> "Nowa misja już czeka. Monety możesz wydać w Porcie Kosmicznym."
+                state.finishedContracts.size < Contract.entries.size -> "W porcie możesz wylosować kolejne zlecenie."
+                else -> "Wszystkie zlecenia CatXa są wykonane. Czas na swobodne loty!"
+            }, color = Mist,
                 fontSize = 15.sp, lineHeight = 21.sp, textAlign = TextAlign.Center)
         }
         Action("DO PORTU", game::closeReward, Modifier.fillMaxWidth(), enabled = !game.busy)

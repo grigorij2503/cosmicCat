@@ -7,8 +7,8 @@ internal sealed interface Challenge {
     fun accepts(answer: List<Int>): Boolean
 }
 
-internal data class Batteries(val target: Int, val charges: List<Int>, override val hints: List<String>) : Challenge {
-    override val title = "Zasilanie podnośnika"
+internal data class Batteries(val target: Int, val charges: List<Int>, override val hints: List<String>,
+    override val title: String = "Zasilanie podnośnika") : Challenge {
     override val instruction = "Wybierz dwie baterie, które razem dadzą $target iskier."
 
     override fun accepts(answer: List<Int>) =
@@ -22,10 +22,28 @@ internal enum class ShapeToken(val glyph: String, val label: String, val color: 
     DIAMOND("◆", "Romb", PaintColor.MINT),
 }
 
-internal data class CrystalPattern(val shown: List<ShapeToken>, val missing: ShapeToken, override val hints: List<String>) : Challenge {
-    override val title = "Kod lodowej śluzy"
+internal data class CrystalPattern(val shown: List<ShapeToken>, val missing: ShapeToken, override val hints: List<String>,
+    override val title: String = "Kod lodowej śluzy") : Challenge {
     override val instruction = "Jaki kryształ pasuje na końcu wzoru?"
     override fun accepts(answer: List<Int>) = answer.singleOrNull() == missing.ordinal
+}
+
+internal enum class Pigment(val label: String, val rgb: Int) {
+    RED("Czerwona", 0xFF6369), YELLOW("Żółta", 0xFFE266), BLUE("Niebieska", 0x619FFA),
+    ORANGE("Pomarańczowa", 0xFF9F51), GREEN("Zielona", 0x66CF80), PURPLE("Fioletowa", 0xB58AF8),
+}
+
+internal data class PaintMix(val first: Pigment, val second: Pigment, val result: Pigment) : Challenge {
+    override val title = "Mieszanie farb"
+    override val instruction = "Jaką farbę otrzymasz po zmieszaniu tych dwóch kolorów?"
+    override val hints = listOf(
+        "Popatrz na obie farby i nazwij ich kolory.",
+        "Szukaj nowego koloru wśród trzech próbek.",
+        "Wynik to farba: ${result.label.lowercase()}.",
+    )
+    val choices = listOf(Pigment.ORANGE, Pigment.GREEN, Pigment.PURPLE)
+
+    override fun accepts(answer: List<Int>) = answer.singleOrNull()?.let(choices::getOrNull) == result
 }
 
 internal data class Cell(val x: Int, val y: Int) {

@@ -84,11 +84,20 @@ internal val trails = listOf(
 
 enum class PlantStage { SPROUT, BUD, BLOOM }
 
-internal fun Progress.stageAt(destination: Destination) = trailStages[destination] ?: TrailStage.FIRST_SUPPLY
+internal fun Progress.stageAt(destination: Destination) = trailStages[destination]
+    ?: if (campaignComplete) TrailStage.COMPLETE else TrailStage.FIRST_SUPPLY
+
+internal fun Progress.contractAt(destination: Destination) = activeContract?.takeIf { it.destination == destination }
+
+internal fun Progress.explorationStage(destination: Destination) = when {
+    contractAt(destination) == null -> stageAt(destination)
+    found -> TrailStage.COMPLETE
+    else -> TrailStage.PUZZLE
+}
 internal fun Progress.portLevel(building: Building) = buildings[building] ?: 0
 
 internal fun Progress.takeSupply(destination: Destination, stage: TrailStage): Progress {
-    if (location != destination || destination !in trails || stageAt(destination) != stage) return this
+    if (location != destination || destination !in trails || contractAt(destination) != null || stageAt(destination) != stage) return this
     val next = when (stage) {
         TrailStage.FIRST_SUPPLY -> TrailStage.SECOND_SUPPLY
         TrailStage.SECOND_SUPPLY -> TrailStage.PUZZLE
@@ -99,24 +108,28 @@ internal fun Progress.takeSupply(destination: Destination, stage: TrailStage): P
 
 internal fun Progress.solveStation(destination: Destination, answer: List<Int>): Progress {
     val trail = trails[destination] ?: return this
-    if (location != destination || stageAt(destination) != TrailStage.PUZZLE || !trail.challenge.accepts(answer)) return this
+    val contract = contractAt(destination)
+    val challenge = contract?.challenge ?: trail.challenge
+    if (location != destination || explorationStage(destination) != TrailStage.PUZZLE || !challenge.accepts(answer)) return this
     val alien = Alien.on(destination)
-    return copy(trailStages = trailStages + (destination to TrailStage.GOAL),
-        friends = if (alien == null) friends else friends + alien)
+    val met = if (alien == null) this else copy(friends = friends + alien)
+    return if (contract != null) met.copy(found = true)
+    else met.copy(trailStages = trailStages + (destination to TrailStage.GOAL))
 }
 
 internal fun Progress.finishTrail(destination: Destination): Progress {
-    if (location != destination) return this
+    if (location != destination || destination !in trails || contractAt(destination) != null) return this
     val stage = stageAt(destination)
-    if (stage == TrailStage.COMPLETE && mission.destination == destination) return copy(found = true)
+    val assigned = assignmentDestination == destination
+    if (stage == TrailStage.COMPLETE && assigned) return copy(found = true)
     if (stage != TrailStage.GOAL) return this
     return copy(trailStages = trailStages + (destination to TrailStage.COMPLETE),
-        found = found || mission.destination == destination)
+        found = found || assigned)
 }
 
 internal fun Progress.replayTrail(destination: Destination): Progress =
-    if (location == destination && stageAt(destination) == TrailStage.COMPLETE) {
-        copy(trailStages = trailStages - destination)
+    if (location == destination && destination in trails && contractAt(destination) == null && stageAt(destination) == TrailStage.COMPLETE) {
+        copy(trailStages = trailStages + (destination to TrailStage.FIRST_SUPPLY))
     } else this
 
 internal fun Progress.collectSticker(destination: Destination): Progress =

@@ -92,7 +92,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             } catch (_: Exception) {
                 error = message
                 val route = screen
-                if (route is ScreenState.Flight) navigate(ScreenState.Navigation(route.returning))
+                if (route is ScreenState.Flight) navigate(route.navigation)
             } finally {
                 busy = false
             }
@@ -131,7 +131,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     fun launch(destination: Destination) {
         val route = screen as? ScreenState.Navigation ?: return
-        open(ScreenState.Flight(destination, route.returning))
+        open(ScreenState.Flight(destination, route))
     }
 
     fun land(flight: ScreenState.Flight) {
@@ -147,7 +147,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun solveStation(destination: Destination, answer: List<Int>) {
-        if (screen == ScreenState.Exploration) update { it.solveStation(destination, answer) }
+        if (screen == ScreenState.Exploration) update(next = { if (it.found && it.contractAt(destination) != null) it.checkpoint() else screen }) {
+            it.solveStation(destination, answer)
+        }
     }
 
     fun finishTrail(destination: Destination) {
@@ -177,6 +179,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     fun buy(building: Building) = update { it.build(building) }
 
+    fun drawContract() {
+        if (screen == ScreenState.Hub) update { it.drawContract() }
+    }
+
     fun closeReward() = update(next = { ScreenState.Hub }) { it.copy(rewardPending = false) }
 
     fun back() {
@@ -184,7 +190,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         when (val current = screen) {
             ScreenState.Hub, ScreenState.Loading, ScreenState.Reward -> Unit
             is ScreenState.Creator -> if (current.editing) open(ScreenState.Hub)
-            is ScreenState.Flight -> open(ScreenState.Navigation(current.returning))
+            is ScreenState.Flight -> open(current.navigation)
             is ScreenState.Navigation -> open(progress.checkpoint())
             ScreenState.Exploration, ScreenState.DiscoverySummary -> open(ScreenState.Navigation(progress.found))
             ScreenState.Greenhouse, ScreenState.FriendsHomes -> open(ScreenState.Spaceport)

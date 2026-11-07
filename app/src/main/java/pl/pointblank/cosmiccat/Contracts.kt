@@ -1,0 +1,30 @@
+package pl.pointblank.cosmiccat
+
+enum class Contract(
+    val destination: Destination,
+    val title: String,
+    val briefing: String,
+    internal val challenge: Challenge,
+) {
+    VENUS_BEACONS(Destination.VENUS, "Farba do lądowiska", "Iskra potrzebuje farby do oznaczenia lądowiska.",
+        PaintMix(Pigment.YELLOW, Pigment.RED, Pigment.ORANGE)),
+    MARS_POWER(Destination.MARS, "Energia dla łazika", "Dobierz baterie do zapasowego łazika Mikiego.",
+        Batteries(8, listOf(2, 5, 3), listOf("Dobierz dwie baterie.", "Jedna ma 5 iskier.", "Połącz 5 i 3."),
+            title = "Zasilanie łazika")),
+    MARS_MARKERS(Destination.MARS, "Znaki dla łazików", "Pomóż Mikiemu przygotować farbę na znaki przy trasie łazików.",
+        PaintMix(Pigment.RED, Pigment.BLUE, Pigment.PURPLE)),
+    PLUTO_GARDEN(Destination.PLUTO, "Tabliczki w ogrodzie", "Puszek maluje tabliczki do lodowego ogrodu. Pomóż mu zmieszać farby.",
+        PaintMix(Pigment.BLUE, Pigment.YELLOW, Pigment.GREEN)),
+    PLUTO_LOCK(Destination.PLUTO, "Zamek do szklarni", "Uzupełnij kod z kryształów, żeby otworzyć szklarnię Puszka.",
+        CrystalPattern(listOf(ShapeToken.DIAMOND, ShapeToken.TRIANGLE, ShapeToken.DIAMOND, ShapeToken.TRIANGLE),
+            ShapeToken.DIAMOND, listOf("Dwa kształty są na zmianę.", "Po trójkącie przychodzi romb.", "Wybierz romb."),
+            title = "Kod do szklarni")),
+    JUPITER_CARGO(Destination.JUPITER, "Paczka nad chmurami", "Zaprogramuj drona Kropki, żeby odebrał paczkę z drugiego pomostu.",
+        DroneRoute(true, listOf("Dron startuje po prawej.", "Najpierw poleć w lewo, a potem w górę.", "Spróbuj ← ↑ ← ↑ ←."))),
+    NEPTUNE_GUST(Destination.NEPTUNE, "Alarm wiatrowy", "Pomóż Bąblowi znaleźć najsilniejszy podmuch.",
+        WindReadings(listOf(8, 3, 6), true, listOf("Popatrz na długość pasków.", "Szukaj największej liczby.", "Wybierz czujnik A."))),
+    SATURN_SAMPLES(Destination.SATURN, "Sygnał z pierścieni", "Uzupełnij wzór na konsoli, żeby nadać sygnał do bazy.",
+        CrystalPattern(listOf(ShapeToken.CIRCLE, ShapeToken.DIAMOND, ShapeToken.TRIANGLE, ShapeToken.CIRCLE, ShapeToken.DIAMOND),
+            ShapeToken.TRIANGLE, listOf("Popatrz na pierwsze trzy kształty.", "Wzór to koło, romb, trójkąt.", "Wybierz trójkąt."),
+            title = "Kod sygnału")),
+}

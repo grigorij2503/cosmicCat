@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -36,6 +37,7 @@ internal fun ChallengeDialog(
         mutableStateOf(if (challenge is Mirrors) ArrayList(challenge.initial) else arrayListOf())
     }
     var tried by rememberSaveable(challenge) { mutableStateOf(false) }
+    var paintRevealed by rememberSaveable(challenge) { mutableStateOf(false) }
     var hints by rememberSaveable(challenge) { mutableIntStateOf(0) }
     val maxHints = minOf(lab, challenge.hints.size)
     fun select(values: List<Int>) {
@@ -95,6 +97,7 @@ internal fun ChallengeDialog(
                             }
                         }
                     }
+                    is PaintMix -> PaintMixer(challenge, answer.singleOrNull(), paintRevealed) { select(listOf(it)) }
                     is Mirrors -> {
                         MirrorBoard(challenge, answer)
                         Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
@@ -142,19 +145,23 @@ internal fun ChallengeDialog(
                     }
                 }
                 if (tried) Text("Jeszcze jedna próba? Możesz zmienić odpowiedź.", color = Gold, fontSize = 14.sp)
-                if (hints > 0) {
+                if (hints > 0 && !paintRevealed) {
                     Eyebrow("WSKAZÓWKA Z LABORATORIUM", SkyBlue)
                     HintPicture(challenge, hints)
                     Text(challenge.hints[hints - 1], color = Snow, fontSize = 14.sp)
                 }
-                if (hints < maxHints) {
+                if (hints < maxHints && !paintRevealed) {
                     SmallAction("💡 PODPOWIEDŹ ${hints + 1}/$maxHints", { hints++ }, Modifier.fillMaxWidth())
                 }
             }
         },
         confirmButton = {
-            Action("SPRAWDŹ", {
-                if (challenge.accepts(answer)) onSolved(answer.toList()) else tried = true
+            Action(if (paintRevealed) "GOTOWE" else "SPRAWDŹ", {
+                when {
+                    !challenge.accepts(answer) -> tried = true
+                    challenge is PaintMix && !paintRevealed -> paintRevealed = true
+                    else -> onSolved(answer.toList())
+                }
             }, color = tint, enabled = when (challenge) {
                 is Batteries -> answer.size == 2
                 IceSorting -> answer.size == 3
@@ -163,6 +170,48 @@ internal fun ChallengeDialog(
         },
         dismissButton = { TextButton(onClick = onClose) { Text("WRÓĆ") } },
     )
+}
+
+@Composable
+private fun PaintMixer(challenge: PaintMix, selected: Int?, revealed: Boolean, choose: (Int) -> Unit) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically) {
+        PaintSample(challenge.first)
+        Text("+", color = Snow, fontSize = 20.sp, fontWeight = FontWeight.Black)
+        PaintSample(challenge.second)
+        Text("=", color = Snow, fontSize = 20.sp, fontWeight = FontWeight.Black)
+        if (revealed) PaintSample(challenge.result)
+        else Text("?", color = Gold, fontSize = 23.sp, fontWeight = FontWeight.Black)
+    }
+    if (revealed) {
+        Text("Brawo! Powstała farba ${challenge.result.label.lowercase()}.",
+            color = Mint, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+    } else {
+        challenge.choices.forEachIndexed { index, pigment ->
+            OutlinedButton(onClick = { choose(index) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(9.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    PigmentDot(pigment, Modifier.size(24.dp))
+                    Text(pigment.label, Modifier.weight(1f), color = Snow)
+                    if (selected == index) Text("✓", color = Mint, fontWeight = FontWeight.Black)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PaintSample(pigment: Pigment) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        PigmentDot(pigment, Modifier.size(29.dp))
+        Text(pigment.label, color = Snow, fontSize = 11.sp)
+    }
+}
+
+@Composable
+private fun PigmentDot(pigment: Pigment, modifier: Modifier) {
+    Box(modifier.background(colorOf(pigment.rgb), CircleShape).border(1.dp, Snow.copy(alpha = .55f), CircleShape))
 }
 
 @Composable
@@ -196,6 +245,7 @@ private fun HintPicture(challenge: Challenge, level: Int) {
             val group = challenge.shown.take(period).joinToString(" ") { it.glyph }
             "$group   │   $group   ↻"
         }
+        is PaintMix -> return
         is Mirrors -> if (level == 3) {
             if (challenge.receiverAtTop) "↑   /   →   /   ↑   🟡" else "↑   /   →   \\   ↓   🟡"
         } else "🔵   ↑   /   →   ?"

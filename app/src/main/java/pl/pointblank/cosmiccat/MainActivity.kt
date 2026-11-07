@@ -52,6 +52,7 @@ private fun CosmicGame(assets: AssetManager, game: GameViewModel = viewModel()) 
 
     val state = game.progress
     val screen = game.screen
+    val orbit = rememberSaveable(saver = OrbitView.Saver) { OrbitView() }
     BackHandler(screen != ScreenState.Hub && screen != ScreenState.Creator()) { game.back() }
     Box(Modifier.fillMaxSize()) {
         Starfield(Modifier.matchParentSize())
@@ -60,8 +61,8 @@ private fun CosmicGame(assets: AssetManager, game: GameViewModel = viewModel()) 
                 ScreenState.Loading -> if (game.busy) CircularProgressIndicator(Modifier.align(Alignment.Center))
                 is ScreenState.Creator -> CharacterCreatorScreen(screen.editing, state.cat, assets, game)
                 ScreenState.Hub -> MissionBriefingScreen(state, game.arrival, assets, game)
-                is ScreenState.Navigation -> NavigationScreen(screen.returning, state, assets, game)
-                is ScreenState.Flight -> FlightScreen(screen, state, assets, game)
+                is ScreenState.Navigation -> NavigationScreen(screen, state, assets, game, orbit)
+                is ScreenState.Flight -> FlightScreen(screen, state, assets, game, orbit)
                 ScreenState.Exploration -> key(state.location) {
                     PlanetPlatformerScreen(state, assets, game, checkNotNull(game.exploration))
                 }

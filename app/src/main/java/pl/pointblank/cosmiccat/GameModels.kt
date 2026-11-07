@@ -2,6 +2,7 @@ package pl.pointblank.cosmiccat
 
 import java.text.Normalizer
 import java.util.Locale
+import kotlin.random.Random
 
 enum class Gender {
     BOY, GIRL;
@@ -141,17 +142,33 @@ data class Progress(
     val plants: Map<Destination, PlantStage> = emptyMap(),
     val requests: Set<Alien> = emptySet(),
     val activeMission: Destination = missions.first().destination,
+    val activeContract: Contract? = null,
+    val finishedContracts: Set<Contract> = emptySet(),
 ) {
     val mission get() = missionsByDestination.getValue(activeMission)
     val level get() = missions.indexOf(mission) + 1
-    val expedition get() = completed / missions.size + 1
+    val campaignComplete get() = completed >= missions.size
+    val assignmentDestination get() = activeContract?.destination ?: activeMission.takeIf { !campaignComplete || found }
+
+    fun drawContract(random: Random = Random.Default): Progress {
+        if (!campaignComplete || location != Destination.MOON || found || rewardPending || activeContract != null) return this
+        val next = Contract.entries.filterNot { it in finishedContracts }.randomOrNull(random) ?: return this
+        return copy(activeContract = next)
+    }
 
     fun landAt(destination: Destination): Progress {
         val landed = copy(location = destination, visited = visited + destination)
-        return if (destination == Destination.MOON && found) {
-            landed.copy(completed = completed + 1, found = false, rewardPending = true, coins = coins + REWARD,
-                trailStages = trailStages - activeMission, activeMission = missions[level % missions.size].destination)
-        } else landed
+        if (destination != Destination.MOON || !found) return landed
+
+        val paid = landed.copy(found = false, rewardPending = true, coins = coins + REWARD)
+        val contract = activeContract
+        if (contract != null) return paid.copy(activeContract = null, finishedContracts = finishedContracts + contract)
+
+        return paid.copy(
+            completed = completed + 1,
+            trailStages = trailStages - activeMission,
+            activeMission = missions[level % missions.size].destination,
+        )
     }
 
     fun price(building: Building) = building.price + 6 * (buildings[building] ?: 0)
@@ -169,7 +186,7 @@ internal fun Progress.checkpoint(): ScreenState = when {
     !started -> ScreenState.Creator()
     rewardPending -> ScreenState.Reward
     location == Destination.MOON -> ScreenState.Hub
-    found && location == activeMission -> ScreenState.DiscoverySummary
+    found && location == assignmentDestination -> ScreenState.DiscoverySummary
     else -> ScreenState.Exploration
 }
 
@@ -177,8 +194,8 @@ sealed interface ScreenState {
     data object Loading : ScreenState
     data class Creator(val editing: Boolean = false) : ScreenState
     data object Hub : ScreenState
-    data class Navigation(val returning: Boolean = false) : ScreenState
-    data class Flight(val destination: Destination, val returning: Boolean) : ScreenState
+    data class Navigation(val returning: Boolean = false, val freeFlight: Boolean = false) : ScreenState
+    data class Flight(val destination: Destination, val navigation: Navigation) : ScreenState
     data object Exploration : ScreenState
     data object DiscoverySummary : ScreenState
     data object Reward : ScreenState

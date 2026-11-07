@@ -2,7 +2,7 @@
 
 Polska gra 2D dla dzieci. Stwórz koto-astronautę, wpisz cel podróży i odkrywaj kosmos. Za każdą misję CatX wypłaca 12 monet, które można wydać na budowę i ulepszanie portu. Gra działa offline, bez reklam i mikropłatności.
 
-W wersji 1.1 wyprawy mają trzy obszary, zagadkę, nasionko i sekretną naklejkę. Na mapie można wpisać nazwę wcześniej odwiedzonej planety i wrócić do niej bez zmiany głównej misji. Karty budynków opisują aktywne bonusy. Wejścia do szklarni i domków przyjaciół są w ekranie budowy portu.
+Na mapie można obracać model Układu Słonecznego i włączyć ruch planet. Księżyc jest oznaczony jako Baza CatX, a rakieta leci po łuku od aktualnej pozycji do celu. Lądowisko można wybrać na mapie, z listy albo wpisując nazwę. Wyprawy mają trzy obszary, zagadkę, nasionko i sekretną naklejkę. Po sześciu misjach kampanii gracz zdobywa odznakę, może swobodnie latać po Układzie Słonecznym i losować nowe zlecenia bez powtórek. Karty budynków opisują aktywne bonusy. Wejścia do szklarni i domków przyjaciół są w ekranie budowy portu.
 
 ## Uruchomienie
 
